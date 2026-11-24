@@ -15,6 +15,9 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@600;700;800;900&display=swap" rel="stylesheet">
 
     <script type="module" crossorigin>// \0rolldown/runtime.js
 var __defProp = Object.defineProperty;
@@ -58695,6 +58698,402 @@ function schoolNameboard(b) {
 	flag.position.set(poleX,5.24,poleZ); local.add(flag);
 	return frontage;
 }
+
+const BENGALI_GRAFFITI_SPECS = [
+	{
+		id: "beware",
+		text: "zoombie হইতে সাবধান",
+		lines: ["zoombie হইতে সাবধান"],
+		color: "#b71c1c",
+		darkColor: "#580a0a",
+		lightColor: "#e53935",
+		style: "warning",
+		fontSize: 54,
+		canvasWidth: 1024,
+		canvasHeight: 320,
+		planeW: 3.4,
+		planeH: 1.05
+	},
+	{
+		id: "catch_shoot",
+		text: "একটা একটা zombie ধর , ধইরা ধইরা গুলি কর",
+		lines: ["একটা একটা zombie ধর ,", "ধইরা ধইরা গুলি কর"],
+		color: "#9c1414",
+		darkColor: "#4f0808",
+		lightColor: "#d32f2f",
+		style: "slogan",
+		fontSize: 48,
+		canvasWidth: 1024,
+		canvasHeight: 384,
+		planeW: 4.0,
+		planeH: 1.5
+	},
+	{
+		id: "become_zombie",
+		text: "আমরা হবো zombie , একদিন ... ওহো বুকের গভীরে ......",
+		lines: ["আমরা হবো zombie , একদিন ...", "ওহো বুকের গভীরে ......"],
+		color: "#1c1b18",
+		darkColor: "#3d1414",
+		lightColor: "#424242",
+		style: "despair",
+		fontSize: 44,
+		canvasWidth: 1024,
+		canvasHeight: 360,
+		planeW: 4.2,
+		planeH: 1.45
+	},
+	{
+		id: "virus_found",
+		text: "এই এলাকায় জম্বি ভাইরাস পাওয়া গেছে , সাবধান!",
+		lines: ["এই এলাকায় জম্বি ভাইরাস", "পাওয়া গেছে , সাবধান!"],
+		color: "#c62828",
+		darkColor: "#6a0f0f",
+		lightColor: "#f44336",
+		style: "quarantine",
+		fontSize: 46,
+		canvasWidth: 1024,
+		canvasHeight: 384,
+		planeW: 3.8,
+		planeH: 1.4
+	},
+	{
+		id: "vaccine",
+		text: "আপনার সন্তানকে zoombie টিকা দিন",
+		lines: ["আপনার সন্তানকে", "zoombie টিকা দিন"],
+		color: "#212121",
+		darkColor: "#7f1d1d",
+		lightColor: "#424242",
+		style: "notice",
+		fontSize: 50,
+		canvasWidth: 1024,
+		canvasHeight: 360,
+		planeW: 3.6,
+		planeH: 1.35
+	}
+];
+
+function createGraffitiTexture(spec, seed = 42) {
+	const canvas = document.createElement("canvas");
+	const width = spec.canvasWidth || 1024;
+	const height = spec.canvasHeight || 384;
+	canvas.width = width;
+	canvas.height = height;
+	const g = canvas.getContext("2d");
+
+	let s = (seed % 2147483647) || 12345;
+	if (s <= 0) s += 2147483646;
+	const rng = () => {
+		s = (s * 16807) % 2147483647;
+		return (s - 1) / 2147483646;
+	};
+
+	g.clearRect(0, 0, width, height);
+
+	const mainColor = spec.color || "#b71c1c";
+	const darkColor = spec.darkColor || "#500a0a";
+	const lightColor = spec.lightColor || mainColor;
+	const lines = spec.lines;
+	const fontSize = spec.fontSize || 48;
+	const lineSpacing = 1.35;
+	const fontStr = `bold ${fontSize}px "Noto Sans Bengali", "Nirmala UI", "Kalpurush", sans-serif`;
+
+	const totalLines = lines.length;
+	const startY = height / 2 - ((totalLines - 1) * fontSize * lineSpacing) / 2;
+
+	// Warning frame / quarantine brackets
+	if (spec.style === "quarantine") {
+		g.save();
+		g.strokeStyle = mainColor;
+		g.lineWidth = 4 + rng() * 3;
+		g.lineCap = "round";
+		const padX = 35, padY = 25;
+		const bx0 = padX + (rng() - 0.5) * 8;
+		const by0 = padY + (rng() - 0.5) * 6;
+		const bx1 = width - padX + (rng() - 0.5) * 8;
+		const by1 = height - padY + (rng() - 0.5) * 6;
+
+		const drawRoughLine = (x1, y1, x2, y2) => {
+			g.beginPath();
+			g.moveTo(x1, y1);
+			const steps = 10;
+			for (let i = 1; i < steps; i++) {
+				const t = i / steps;
+				g.lineTo(x1 + (x2 - x1) * t + (rng() - 0.5) * 6, y1 + (y2 - y1) * t + (rng() - 0.5) * 6);
+			}
+			g.lineTo(x2, y2);
+			g.stroke();
+		};
+		drawRoughLine(bx0, by0, bx1, by0);
+		drawRoughLine(bx1, by0, bx1, by1);
+		drawRoughLine(bx1, by1, bx0, by1);
+		drawRoughLine(bx0, by1, bx0, by0);
+
+		g.lineWidth = 5;
+		drawRoughLine(bx0 - 10, by0, bx0 + 25, by0);
+		drawRoughLine(bx0, by0 - 10, bx0 + 25, by0);
+		drawRoughLine(bx1 + 10, by1, bx1 - 25, by1);
+		drawRoughLine(bx1, by1 + 10, bx1, by1 - 25);
+		g.restore();
+	} else if (spec.style === "notice") {
+		// Crude medical cross
+		g.save();
+		g.strokeStyle = "#8b0000";
+		g.lineWidth = 6;
+		g.lineCap = "round";
+		const crossX = width / 2 - 280;
+		const crossY = height / 2;
+		g.beginPath();
+		g.moveTo(crossX - 22, crossY);
+		g.lineTo(crossX + 22, crossY);
+		g.moveTo(crossX, crossY - 22);
+		g.lineTo(crossX, crossY + 22);
+		g.stroke();
+		g.restore();
+	}
+
+	// Draw text layers for hand-painted brush/spray texture
+	lines.forEach((line, lineIdx) => {
+		const y = startY + lineIdx * fontSize * lineSpacing;
+		const cx = width / 2;
+
+		// 1. Soft spray halo / overspray
+		g.save();
+		g.font = fontStr;
+		g.textAlign = "center";
+		g.textBaseline = "middle";
+		g.shadowColor = mainColor;
+		g.shadowBlur = 10;
+		g.fillStyle = darkColor;
+		g.globalAlpha = 0.7;
+		g.fillText(line, cx + (rng() - 0.5) * 3, y + (rng() - 0.5) * 3);
+		g.restore();
+
+		// 2. Thick textured stroke (brush bristle bleed)
+		g.save();
+		g.font = fontStr;
+		g.textAlign = "center";
+		g.textBaseline = "middle";
+		g.strokeStyle = darkColor;
+		g.lineWidth = 4;
+		g.lineJoin = "round";
+		g.strokeText(line, cx + (rng() - 0.5) * 2, y + (rng() - 0.5) * 2);
+		g.restore();
+
+		// 3. Main vibrant paint layer
+		g.save();
+		g.font = fontStr;
+		g.textAlign = "center";
+		g.textBaseline = "middle";
+		g.fillStyle = mainColor;
+		g.fillText(line, cx, y);
+		g.restore();
+
+		// 4. Subtle highlight / dry brush stroke
+		g.save();
+		g.font = fontStr;
+		g.textAlign = "center";
+		g.textBaseline = "middle";
+		g.fillStyle = lightColor;
+		g.globalAlpha = 0.45;
+		g.fillText(line, cx - 1, y - 1);
+		g.restore();
+
+		// Underline for warning or final slogan line
+		if (spec.style === "warning" || (spec.style === "slogan" && lineIdx === totalLines - 1)) {
+			g.save();
+			g.strokeStyle = mainColor;
+			g.lineWidth = 4 + rng() * 3;
+			g.lineCap = "round";
+			const metrics = g.measureText(line);
+			const textHalfW = Math.min(width * 0.46, metrics.width / 2 + 15);
+			const uy = y + fontSize * 0.55 + 8;
+			g.beginPath();
+			g.moveTo(cx - textHalfW, uy + (rng() - 0.5) * 4);
+			const segs = 8;
+			for (let j = 1; j <= segs; j++) {
+				const tx = cx - textHalfW + (2 * textHalfW * j) / segs;
+				const ty = uy + (rng() - 0.5) * 6;
+				g.lineTo(tx, ty);
+			}
+			g.stroke();
+			g.restore();
+		}
+
+		// Paint drips running down
+		const metrics = g.measureText(line);
+		const textW = Math.min(width - 80, metrics.width);
+		const leftX = cx - textW / 2 + 12;
+		const rightX = cx + textW / 2 - 12;
+		const numDrips = 5 + Math.floor(rng() * 8);
+
+		g.save();
+		for (let d = 0; d < numDrips; d++) {
+			const dx = leftX + rng() * (rightX - leftX);
+			const dy = y + fontSize * 0.38;
+			const dripLen = 25 + Math.pow(rng(), 1.6) * 110;
+			const dripWidth = 1.8 + rng() * 3.0;
+
+			g.strokeStyle = rng() > 0.35 ? mainColor : darkColor;
+			g.lineWidth = dripWidth;
+			g.lineCap = "round";
+			const midY = dy + dripLen * 0.6;
+			const midX = dx + (rng() - 0.5) * 6;
+			const endX = midX + (rng() - 0.5) * 4;
+			const endY = dy + dripLen;
+
+			g.beginPath();
+			g.moveTo(dx, dy);
+			g.quadraticCurveTo(midX, midY, endX, endY);
+			g.stroke();
+
+			if (rng() > 0.25) {
+				g.fillStyle = darkColor;
+				g.beginPath();
+				g.arc(endX, endY + 2 + rng() * 2, dripWidth * 0.85 + rng() * 1.5, 0, Math.PI * 2);
+				g.fill();
+			}
+		}
+		g.restore();
+	});
+
+	// Paint splatters
+	g.save();
+	const splatterCount = 35 + Math.floor(rng() * 45);
+	for (let i = 0; i < splatterCount; i++) {
+		const sx = width * 0.08 + rng() * width * 0.84;
+		const sy = height * 0.12 + rng() * height * 0.76;
+		const r = 0.7 + rng() * 2.5;
+		g.fillStyle = rng() > 0.3 ? mainColor : darkColor;
+		g.globalAlpha = 0.3 + rng() * 0.6;
+		g.beginPath();
+		g.arc(sx, sy, r, 0, Math.PI * 2);
+		g.fill();
+	}
+	g.restore();
+
+	// Weathering cutouts (paint chipping on rough wall)
+	g.save();
+	g.globalCompositeOperation = "destination-out";
+	const distressCount = 35 + Math.floor(rng() * 30);
+	for (let i = 0; i < distressCount; i++) {
+		const hx = width * 0.06 + rng() * width * 0.88;
+		const hy = height * 0.15 + rng() * height * 0.7;
+		const hr = 0.6 + rng() * 1.8;
+		g.globalAlpha = 0.25 + rng() * 0.55;
+		g.beginPath();
+		g.arc(hx, hy, hr, 0, Math.PI * 2);
+		g.fill();
+	}
+	g.restore();
+
+	const tex = new CanvasTexture(canvas);
+	tex.colorSpace = SRGBColorSpace;
+	return tex;
+}
+
+function buildBuildingGraffiti(group, buildings) {
+	if (!buildings || !buildings.length) return;
+
+	const assignedBuildingIds = new Set();
+	const curatedPlacements = [
+		{ id: "lookout", specIdx: 0, wall: 0, offX: -0.8, h: 1.65 },
+		{ id: "slopeShed", specIdx: 0, wall: 0, offX: 0.0, h: 1.55 },
+		{ id: "terraceA", specIdx: 1, wall: 0, offX: -0.3, h: 1.60 },
+		{ id: "barn", specIdx: 1, wall: 2, offX: 0.5, h: 1.75 },
+		{ id: "meadowRuin", specIdx: 2, wall: 0, offX: 0.2, h: 1.50 },
+		{ id: "corner", specIdx: 2, wall: 3, offX: -0.2, h: 1.65 },
+		{ id: "inn", specIdx: 3, wall: 0, offX: 1.2, h: 1.60 },
+		{ id: "slopeRuin", specIdx: 3, wall: 1, offX: 0.0, h: 1.55 },
+		{ id: "townhall", specIdx: 4, wall: 2, offX: -0.4, h: 1.70 },
+		{ id: "terraceC", specIdx: 4, wall: 0, offX: 0.3, h: 1.60 }
+	];
+
+	const textureCache = new Map();
+	const getTexture = (specIdx, variant) => {
+		const key = `${specIdx}_${variant}`;
+		let tex = textureCache.get(key);
+		if (!tex) {
+			tex = createGraffitiTexture(BENGALI_GRAFFITI_SPECS[specIdx], 1000 + specIdx * 37 + variant * 191);
+			textureCache.set(key, tex);
+		}
+		return tex;
+	};
+
+	const placeGraffitiOnBuilding = (b, specIdx, wallIdx, offWall, wallHeight, seed) => {
+		const spec = BENGALI_GRAFFITI_SPECS[specIdx];
+		const variant = Math.floor(Math.abs(seed) % 5);
+		const tex = getTexture(specIdx, variant);
+		const pw = spec.planeW;
+		const ph = spec.planeH;
+
+		const mat = new MeshStandardMaterial({
+			map: tex,
+			transparent: true,
+			side: 2,
+			depthWrite: false,
+			polygonOffset: true,
+			polygonOffsetFactor: -2,
+			polygonOffsetUnits: -2,
+			roughness: 0.95,
+			metalness: 0.02
+		});
+
+		const mesh = new Mesh(new PlaneGeometry(pw, ph), mat);
+		mesh.renderOrder = 3;
+
+		const tilt = (((seed * 9301 + 49297) % 233280) / 233280 - 0.5) * 0.06;
+
+		if (wallIdx === 0) {
+			mesh.position.set(offWall, wallHeight, b.d / 2 + 0.038);
+			mesh.rotation.set(0, 0, tilt);
+		} else if (wallIdx === 1) {
+			mesh.position.set(offWall, wallHeight, -b.d / 2 - 0.038);
+			mesh.rotation.set(0, Math.PI, -tilt);
+		} else if (wallIdx === 2) {
+			mesh.position.set(b.w / 2 + 0.038, wallHeight, offWall);
+			mesh.rotation.set(0, Math.PI / 2, tilt);
+		} else {
+			mesh.position.set(-b.w / 2 - 0.038, wallHeight, offWall);
+			mesh.rotation.set(0, -Math.PI / 2, -tilt);
+		}
+
+		const local = new Group();
+		local.position.set(b.x, b.baseY, b.z);
+		local.rotation.y = -b.rot;
+		local.name = `graffiti-${b.id || "house"}-${spec.id}`;
+		local.add(mesh);
+		group.add(local);
+	};
+
+	for (const cp of curatedPlacements) {
+		const b = buildings.find(q => q.id === cp.id);
+		if (b) {
+			assignedBuildingIds.add(b.id);
+			placeGraffitiOnBuilding(b, cp.specIdx, cp.wall, cp.offX, cp.h, b.seed || 1234);
+		}
+	}
+
+	for (let i = 0; i < buildings.length; i++) {
+		const b = buildings[i];
+		if (!b || assignedBuildingIds.has(b.id) || b.kind === "church") continue;
+		if (b.w < 6.0 || b.d < 5.0 || (b.damage && b.damage > 0.85)) continue;
+
+		const hash = Math.abs(Math.sin((b.x * 12.9898 + b.z * 78.233) * 43758.5453));
+		if (hash > 0.38) continue;
+
+		const specIdx = Math.floor((hash * 1000) % BENGALI_GRAFFITI_SPECS.length);
+		const spec = BENGALI_GRAFFITI_SPECS[specIdx];
+		const wallHash = Math.abs(Math.cos(b.seed || (b.x * 37 + b.z * 73)));
+		const wallIdx = Math.floor(wallHash * 4) % 4;
+		const wallSpan = (wallIdx === 0 || wallIdx === 1) ? b.w : b.d;
+		const maxOff = Math.max(0.1, (wallSpan - spec.planeW - 1.2) / 2);
+		const offWall = (((hash * 543) % 1) - 0.5) * 2 * maxOff;
+		const wallHeight = 1.45 + ((hash * 997) % 0.45);
+
+		placeGraffitiOnBuilding(b, specIdx, wallIdx, offWall, wallHeight, Math.floor(hash * 1e6));
+		assignedBuildingIds.add(b.id);
+	}
+}
 // Cast slab and low perimeter parapet. The same surviving strips block movement.
 function concreteRoof(B,b,h,field) {
 	const nx=8, nz=6, hw=b.w/2+.14, hd=b.d/2+.14;
@@ -61430,6 +61829,7 @@ async function build$2(ctx) {
 	group.name = "buildings";
 	const school = ctx.layout.buildings.find(b => b.id === "townhall");
 	if (school) group.add(schoolNameboard(school));
+	buildBuildingGraffiti(group, ctx.layout.buildings);
 	let tris = 0, verts = 0;
 	const parts = [];
 	for (const [key, mb] of chunks) {

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Graffiti Preview</title>
+<style>
+  body {
+    background: #2a2a2e;
+    color: #eee;
+    font-family: sans-serif;
+    padding: 20px;
+  }
+  .card {
+    background: #d5cfc5; /* Plaster wall color */
+    background-image: radial-gradient(#b0a898 1px, transparent 1px);
+    background-size: 8px 8px;
+    margin: 20px 0;
+    padding: 15px;
+    border-radius: 8px;
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  }
+  canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+</head>
+<body>
+<h1>Apocalyptic Hand-Painted Bengali Graffiti Test</h1>
+<div id="container"></div>
+
+<script>
+const GRAFFITI_SPECS = [
+  {
+    id: "beware",
+    lines: ["zoombie হইতে সাবধান"],
+    color: "#b71c1c",
+    darkColor: "#580a0a",
+    lightColor: "#e53935",
+    style: "warning",
+    fontSize: 54,
+    canvasWidth: 1024,
+    canvasHeight: 320,
+    aspectW: 3.4,
+    aspectH: 1.05
+  },
+  {
+    id: "catch_shoot",
+    lines: ["একটা একটা zombie ধর ,", "ধইরা ধইরা গুলি কর"],
+    color: "#a31515",
+    darkColor: "#4f0808",
+    lightColor: "#d32f2f",
+    style: "slogan",
+    fontSize: 48,
+    canvasWidth: 1024,
+    canvasHeight: 384,
+    aspectW: 4.0,
+    aspectH: 1.5
+  },
+  {
+    id: "become_zombie",
+    lines: ["আমরা হবো zombie , একদিন ...", "ওহো বুকের গভীরে ......"],
+    color: "#1c1b18",
+    darkColor: "#3d1414",
+    lightColor: "#424242",
+    style: "despair",
+    fontSize: 44,
+    canvasWidth: 1024,
+    canvasHeight: 360,
+    aspectW: 4.2,
+    aspectH: 1.45
+  },
+  {
+    id: "virus_found",
+    lines: ["এই এলাকায় জম্বি ভাইরাস", "পাওয়া গেছে , সাবধান!"],
+    color: "#c62828",
+    darkColor: "#6a0f0f",
+    lightColor: "#f44336",
+    style: "quarantine",
+    fontSize: 46,
+    canvasWidth: 1024,
+    canvasHeight: 384,
+    aspectW: 3.8,
+    aspectH: 1.4
+  },
+  {
+    id: "vaccine",
+    lines: ["আপনার সন্তানকে", "zoombie টিকা দিন"],
+    color: "#212121",
+    darkColor: "#7f1d1d",
+    lightColor: "#424242",
+    style: "notice",
+    fontSize: 50,
+    canvasWidth: 1024,
+    canvasHeight: 360,
+    aspectW: 3.6,
+    aspectH: 1.3
+  }
+];
+
+function renderGraffiti(spec, seed = 42) {
+  const canvas = document.createElement("canvas");
+  const width = spec.canvasWidth || 1024;
+  const height = spec.canvasHeight || 384;
+  canvas.width = width;
+  canvas.height = height;
+  const g = canvas.getContext("2d");
+
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  const rng = () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+
+  g.clearRect(0, 0, width, height);
+
+  const mainColor = spec.color || "#b71c1c";
+  const darkColor = spec.darkColor || "#500a0a";
+  const lightColor = spec.lightColor || mainColor;
+  const lines = spec.lines;
+  const fontSize = spec.fontSize || 48;
+  const lineSpacing = 1.35;
+  const fontStr = `bold ${fontSize}px "Nirmala UI", "Noto Sans Bengali", "Kalpurush", sans-serif`;
+
+  const totalLines = lines.length;
+  const startY = height / 2 - ((totalLines - 1) * fontSize * lineSpacing) / 2;
+
+  // Specific style backgrounds/markings
+  if (spec.style === "quarantine") {
+    g.save();
+    g.strokeStyle = mainColor;
+    g.lineWidth = 4 + rng() * 3;
+    g.lineCap = "round";
+    const padX = 35, padY = 25;
+    const bx0 = padX + (rng() - 0.5) * 8;
+    const by0 = padY + (rng() - 0.5) * 6;
+    const bx1 = width - padX + (rng() - 0.5) * 8;
+    const by1 = height - padY + (rng() - 0.5) * 6;
+
+    const drawRoughLine = (x1, y1, x2, y2) => {
+      g.beginPath();
+      g.moveTo(x1, y1);
+      const steps = 10;
+      for (let i = 1; i < steps; i++) {
+        const t = i / steps;
+        g.lineTo(x1 + (x2 - x1) * t + (rng() - 0.5) * 6, y1 + (y2 - y1) * t + (rng() - 0.5) * 6);
+      }
+      g.lineTo(x2, y2);
+      g.stroke();
+    };
+    drawRoughLine(bx0, by0, bx1, by0);
+    drawRoughLine(bx1, by0, bx1, by1);
+    drawRoughLine(bx1, by1, bx0, by1);
+    drawRoughLine(bx0, by1, bx0, by0);
+
+    // Hazard corner brackets
+    g.lineWidth = 5;
+    drawRoughLine(bx0 - 10, by0, bx0 + 25, by0);
+    drawRoughLine(bx0, by0 - 10, bx0, by0 + 25);
+    drawRoughLine(bx1 + 10, by1, bx1 - 25, by1);
+    drawRoughLine(bx1, by1 + 10, bx1, by1 - 25);
+    g.restore();
+  } else if (spec.style === "notice") {
+    g.save();
+    g.strokeStyle = "#8b0000";
+    g.lineWidth = 6;
+    g.lineCap = "round";
+    const crossX = width / 2 - 280;
+    const crossY = height / 2;
+    g.beginPath();
+    g.moveTo(crossX - 22, crossY);
+    g.lineTo(crossX + 22, crossY);
+    g.moveTo(crossX, crossY - 22);
+    g.lineTo(crossX, crossY + 22);
+    g.stroke();
+    g.restore();
+  }
+
+  // Draw text layers for hand-painted brush/spray texture
+  lines.forEach((line, lineIdx) => {
+    const y = startY + lineIdx * fontSize * lineSpacing;
+    const cx = width / 2;
+
+    // 1. Soft spray halo
+    g.save();
+    g.font = fontStr;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.shadowColor = mainColor;
+    g.shadowBlur = 10;
+    g.fillStyle = darkColor;
+    g.globalAlpha = 0.7;
+    g.fillText(line, cx + (rng() - 0.5) * 3, y + (rng() - 0.5) * 3);
+    g.restore();
+
+    // 2. Thick textured stroke (brush bristle bleed)
+    g.save();
+    g.font = fontStr;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.strokeStyle = darkColor;
+    g.lineWidth = 4;
+    g.lineJoin = "round";
+    g.strokeText(line, cx + (rng() - 0.5) * 2, y + (rng() - 0.5) * 2);
+    g.restore();
+
+    // 3. Main vibrant paint layer
+    g.save();
+    g.font = fontStr;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillStyle = mainColor;
+    g.fillText(line, cx, y);
+    g.restore();
+
+    // 4. Subtle highlight / dry brush stroke
+    g.save();
+    g.font = fontStr;
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillStyle = lightColor;
+    g.globalAlpha = 0.45;
+    g.fillText(line, cx - 1, y - 1);
+    g.restore();
+
+    // Underline for warning or final slogan line
+    if (spec.style === "warning" || (spec.style === "slogan" && lineIdx === totalLines - 1)) {
+      g.save();
+      g.strokeStyle = mainColor;
+      g.lineWidth = 4 + rng() * 3;
+      g.lineCap = "round";
+      const metrics = g.measureText(line);
+      const textHalfW = Math.min(width * 0.46, metrics.width / 2 + 15);
+      const uy = y + fontSize * 0.55 + 8;
+      g.beginPath();
+      g.moveTo(cx - textHalfW, uy + (rng() - 0.5) * 4);
+      const segs = 8;
+      for (let j = 1; j <= segs; j++) {
+        const tx = cx - textHalfW + (2 * textHalfW * j) / segs;
+        const ty = uy + (rng() - 0.5) * 6;
+        g.lineTo(tx, ty);
+      }
+      g.stroke();
+      g.restore();
+    }
+
+    // Paint drips
+    const metrics = g.measureText(line);
+    const textW = Math.min(width - 80, metrics.width);
+    const leftX = cx - textW / 2 + 12;
+    const rightX = cx + textW / 2 - 12;
+    const numDrips = 5 + Math.floor(rng() * 8);
+
+    g.save();
+    for (let d = 0; d < numDrips; d++) {
+      const dx = leftX + rng() * (rightX - leftX);
+      const dy = y + fontSize * 0.38;
+      const dripLen = 25 + Math.pow(rng(), 1.6) * 110;
+      const dripWidth = 1.8 + rng() * 3.0;
+
+      g.strokeStyle = rng() > 0.35 ? mainColor : darkColor;
+      g.lineWidth = dripWidth;
+      g.lineCap = "round";
+      g.beginPath();
+      g.moveTo(dx, dy);
+
+      const midY = dy + dripLen * 0.6;
+      const midX = dx + (rng() - 0.5) * 6;
+      const endX = midX + (rng() - 0.5) * 4;
+      const endY = dy + dripLen;
+      g.quadraticCurveTo(midX, midY, endX, endY);
+      g.stroke();
+
+      if (rng() > 0.25) {
+        g.fillStyle = darkColor;
+        g.beginPath();
+        g.arc(endX, endY + 2 + rng() * 2, dripWidth * 0.85 + rng() * 1.5, 0, Math.PI * 2);
+        g.fill();
+      }
+    }
+    g.restore();
+  });
+
+  // Paint splatters
+  g.save();
+  const splatterCount = 35 + Math.floor(rng() * 45);
+  for (let i = 0; i < splatterCount; i++) {
+    const sx = width * 0.08 + rng() * width * 0.84;
+    const sy = height * 0.12 + rng() * height * 0.76;
+    const r = 0.7 + rng() * 2.5;
+    g.fillStyle = rng() > 0.3 ? mainColor : darkColor;
+    g.globalAlpha = 0.3 + rng() * 0.6;
+    g.beginPath();
+    g.arc(sx, sy, r, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.restore();
+
+  // Weathering cutouts (paint chipping)
+  g.save();
+  g.globalCompositeOperation = "destination-out";
+  const distressCount = 35 + Math.floor(rng() * 30);
+  for (let i = 0; i < distressCount; i++) {
+    const hx = width * 0.06 + rng() * width * 0.88;
+    const hy = height * 0.15 + rng() * height * 0.7;
+    const hr = 0.6 + rng() * 1.8;
+    g.globalAlpha = 0.25 + rng() * 0.55;
+    g.beginPath();
+    g.arc(hx, hy, hr, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.restore();
+
+  return canvas;
+}
+
+const container = document.getElementById("container");
+GRAFFITI_SPECS.forEach((spec, i) => {
+  const card = document.createElement("div");
+  card.className = "card";
+  const title = document.createElement("h3");
+  title.style.color = "#333";
+  title.style.margin = "0 0 8px 0";
+  title.textContent = `${i + 1}. ` + spec.lines.join(" ");
+  card.appendChild(title);
+
+  const canvas = renderGraffiti(spec, 100 + i * 77);
+  card.appendChild(canvas);
+  container.appendChild(card);
+});
+</script>
+</body>
+</html>
