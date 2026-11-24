@@ -58657,6 +58657,168 @@ function schoolVeranda(mb,b) {
 	box(13,cream,end-.09,h-.13,-z-.09,end+.09,h+.47,z-.11);
 	box(13,cream,-end+.09,h-.13,-z-.09,end-.09,h+.47,-z+.09);
 }
+function createShahidMinar() {
+	const minar = new Group();
+	minar.name = "shahid-minar";
+
+	const whiteMat = new MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.6, metalness: 0.05 });
+	const redSunMat = new MeshStandardMaterial({ color: 0xd32020, roughness: 0.45, metalness: 0.05, emissive: 0x330505 });
+	const plinthMat = new MeshStandardMaterial({ color: 0x8a2323, roughness: 0.85, metalness: 0.02 });
+	const topBaseMat = new MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.7, metalness: 0.05 });
+	const stepMat = new MeshStandardMaterial({ color: 0x6e1b1b, roughness: 0.9 });
+	const flowerMat = new MeshStandardMaterial({ color: 0xe67e22, roughness: 0.8 });
+	const roseMat = new MeshStandardMaterial({ color: 0xc0392b, roughness: 0.8 });
+	const ribbonMat = new MeshStandardMaterial({ color: 0x27ae60, roughness: 0.8 });
+	const railMat = new MeshStandardMaterial({ color: 0x2c3e50, roughness: 0.5, metalness: 0.4 });
+
+	// 1. Stepped Plinths
+	const t1 = new Mesh(new BoxGeometry(3.0, 0.24, 2.4), plinthMat);
+	t1.position.set(0, 0.04, -0.1);
+	minar.add(t1);
+
+	const t2 = new Mesh(new BoxGeometry(2.6, 0.14, 2.0), plinthMat);
+	t2.position.set(0, 0.23, -0.1);
+	minar.add(t2);
+
+	const t3 = new Mesh(new BoxGeometry(2.2, 0.14, 1.6), topBaseMat);
+	t3.position.set(0, 0.37, -0.1);
+	minar.add(t3);
+
+	// Steps leading up to plinth from front (+Z)
+	const st1 = new Mesh(new BoxGeometry(1.5, 0.10, 0.30), stepMat);
+	st1.position.set(0, 0.05, 1.05);
+	minar.add(st1);
+
+	const st2 = new Mesh(new BoxGeometry(1.5, 0.10, 0.30), stepMat);
+	st2.position.set(0, 0.15, 0.80);
+	minar.add(st2);
+
+	const st3 = new Mesh(new BoxGeometry(1.5, 0.10, 0.25), stepMat);
+	st3.position.set(0, 0.25, 0.58);
+	minar.add(st3);
+
+	// 2. The Red Sun
+	const sun = new Mesh(new CylinderGeometry(0.58, 0.58, 0.04, 32), redSunMat);
+	sun.position.set(0, 1.69, -0.18);
+	sun.rotation.x = Math.PI / 2;
+	minar.add(sun);
+
+	// 3. Central Column (Mother)
+	const cPostL = new Mesh(new BoxGeometry(0.09, 1.82, 0.10), whiteMat);
+	cPostL.position.set(-0.34, 1.35, 0);
+	minar.add(cPostL);
+
+	const cPostR = new Mesh(new BoxGeometry(0.09, 1.82, 0.10), whiteMat);
+	cPostR.position.set(0.34, 1.35, 0);
+	minar.add(cPostR);
+
+	const cCross = new Mesh(new BoxGeometry(0.77, 0.08, 0.10), whiteMat);
+	cCross.position.set(0, 2.26, 0);
+	minar.add(cCross);
+
+	// Angled bowing top section
+	const cAngleL = new Mesh(new BoxGeometry(0.09, 0.62, 0.10), whiteMat);
+	cAngleL.position.set(-0.34, 2.51, 0.175);
+	cAngleL.rotation.x = 0.60;
+	minar.add(cAngleL);
+
+	const cAngleR = new Mesh(new BoxGeometry(0.09, 0.62, 0.10), whiteMat);
+	cAngleR.position.set(0.34, 2.51, 0.175);
+	cAngleR.rotation.x = 0.60;
+	minar.add(cAngleR);
+
+	const cTopBar = new Mesh(new BoxGeometry(0.77, 0.09, 0.10), whiteMat);
+	cTopBar.position.set(0, 2.76, 0.35);
+	minar.add(cTopBar);
+
+	for (const ry of [0.85, 1.25, 1.65, 2.00]) {
+		const rung = new Mesh(new BoxGeometry(0.59, 0.035, 0.035), whiteMat);
+		rung.position.set(0, ry, 0);
+		minar.add(rung);
+	}
+
+	// 4. Inner Flanking Columns (Medium)
+	for (const sx of [-0.74, 0.74]) {
+		const sign = Math.sign(sx);
+		const p1 = new Mesh(new BoxGeometry(0.07, 1.85, 0.08), whiteMat);
+		p1.position.set(sx - sign * 0.13, 1.365, 0);
+		minar.add(p1);
+
+		const p2 = new Mesh(new BoxGeometry(0.07, 1.85, 0.08), whiteMat);
+		p2.position.set(sx + sign * 0.13, 1.365, 0);
+		minar.add(p2);
+
+		const top = new Mesh(new BoxGeometry(0.33, 0.07, 0.08), whiteMat);
+		top.position.set(sx, 2.29, 0);
+		minar.add(top);
+
+		for (const ry of [0.95, 1.40, 1.85]) {
+			const rung = new Mesh(new BoxGeometry(0.19, 0.03, 0.03), whiteMat);
+			rung.position.set(sx, ry, 0);
+			minar.add(rung);
+		}
+	}
+
+	// 5. Outer Flanking Columns (Short)
+	for (const sx of [-1.24, 1.24]) {
+		const sign = Math.sign(sx);
+		const p1 = new Mesh(new BoxGeometry(0.06, 1.30, 0.07), whiteMat);
+		p1.position.set(sx - sign * 0.11, 1.09, 0);
+		minar.add(p1);
+
+		const p2 = new Mesh(new BoxGeometry(0.06, 1.30, 0.07), whiteMat);
+		p2.position.set(sx + sign * 0.11, 1.09, 0);
+		minar.add(p2);
+
+		const top = new Mesh(new BoxGeometry(0.28, 0.06, 0.07), whiteMat);
+		top.position.set(sx, 1.74, 0);
+		minar.add(top);
+
+		for (const ry of [0.85, 1.25]) {
+			const rung = new Mesh(new BoxGeometry(0.16, 0.025, 0.025), whiteMat);
+			rung.position.set(sx, ry, 0);
+			minar.add(rung);
+		}
+	}
+
+	// 6. Floral wreath offering
+	const w1 = new Mesh(new TorusGeometry(0.18, 0.045, 8, 20), flowerMat);
+	w1.position.set(0, 0.46, 0.22);
+	w1.rotation.x = Math.PI / 2;
+	minar.add(w1);
+
+	const w2 = new Mesh(new TorusGeometry(0.12, 0.035, 8, 16), roseMat);
+	w2.position.set(0, 0.47, 0.22);
+	w2.rotation.x = Math.PI / 2;
+	minar.add(w2);
+
+	const sash = new Mesh(new BoxGeometry(0.48, 0.015, 0.06), ribbonMat);
+	sash.position.set(0, 0.455, 0.22);
+	minar.add(sash);
+
+	// 7. Corner Boundary Posts & Railing
+	for (const [px, pz] of [[-1.40, -1.20], [1.40, -1.20], [-1.40, 1.00], [1.40, 1.00]]) {
+		const post = new Mesh(new CylinderGeometry(0.035, 0.04, 0.42, 8), whiteMat);
+		post.position.set(px, 0.29, pz);
+		minar.add(post);
+
+		const finial = new Mesh(new SphereGeometry(0.045, 8, 8), whiteMat);
+		finial.position.set(px, 0.52, pz);
+		minar.add(finial);
+	}
+
+	const railBack = new Mesh(new BoxGeometry(2.80, 0.025, 0.025), railMat);
+	railBack.position.set(0, 0.38, -1.20);
+	minar.add(railBack);
+
+	for (const sx of [-1.40, 1.40]) {
+		const railSide = new Mesh(new BoxGeometry(0.025, 0.025, 2.20), railMat);
+		railSide.position.set(sx, 0.38, -0.10);
+		minar.add(railSide);
+	}
+
+	return minar;
+}
 function schoolNameboard(b) {
 	const canvas = document.createElement("canvas");
 	canvas.width = 1024; canvas.height = 176;
@@ -58696,6 +58858,9 @@ function schoolNameboard(b) {
 	const flagMap=new CanvasTexture(flagCanvas); flagMap.colorSpace=SRGBColorSpace;
 	const flag=new Mesh(cloth,new MeshStandardMaterial({map:flagMap,side:2,roughness:1}));
 	flag.position.set(poleX,5.24,poleZ); local.add(flag);
+	const minar = createShahidMinar();
+	minar.position.set(2.3, 0, b.d / 2 + 3.6);
+	local.add(minar);
 	return frontage;
 }
 
