@@ -52624,59 +52624,21 @@ uniform float uFarSize;
   float n2 = texture2D(uNoiseTex, wxz / 410.0 + 0.2).g;
   float n3 = texture2D(uNoiseTex, wxz / 61.0 + 0.6).b;
 
-  // limestone, true triplanar: the walls never show a stretched, striped projection
-  vec2 sw = N0.xz * N0.xz; sw /= max(sw.x + sw.y, 1e-4);
-  float sideK = smoothstep(0.2, 0.48, slope);
-  vec3 wgt = vec3(sw.x * sideK, 1.0 - sideK, sw.y * sideK);
-  vec2 uvT = wxz / 104.0;
-  vec2 uvX = vec2(wxz.y, h * 1.1) / 128.0;
-  vec2 uvZ = vec2(wxz.x, h * 1.1) / 128.0 + 0.37;
-  vec3 rock = texture(uTCol, vec3(uvX, 4.0)).rgb * wgt.x + texture(uTCol, vec3(uvT, 4.0)).rgb * wgt.y + texture(uTCol, vec3(uvZ, 4.0)).rgb * wgt.z;
-  float rl = dot(rock, vec3(0.3333));
-  // pale dolomite: lifted, slightly desaturated, drifting between cool grey and warm cream
-  rock = mix(vec3(rl), rock, 0.7) * 0.58;
-  vec2 rw = mat2(0.819, -0.574, 0.574, 0.819) * wxz;
-  float c1 = texture2D(uNoiseTex, rw / 97.0 + 0.11).a;
-  float can = n3 * 0.5 + c1 * 0.5;
-  rock *= mix(vec3(0.94, 0.97, 1.03), vec3(1.07, 1.0, 0.9), smoothstep(0.3, 0.7, n2));
-  rock *= 0.8 + 0.4 * smoothstep(0.25, 0.75, texture2D(uNoiseTex, rw / 730.0).g * 0.6 + n2 * 0.4);
-  // dark weathering streaks running down the walls (noise stretched along the fall line)
-  float st = mix(texture2D(uNoiseTex, vec2(wxz.y / 330.0, h / 1100.0)).r, texture2D(uNoiseTex, vec2(wxz.x / 330.0, h / 1100.0) + 0.43).r, sw.y);
-  float streak = smoothstep(0.3, 0.7, st * 0.7 + n2 * 0.3);
-  rock *= mix(1.0, 0.76 + 0.24 * streak, sideK);
-  rock *= mix(0.84, 1.0, smoothstep(0.0, 0.35, flow + can * 0.3));   // damp gullies
-
-  vec3 scree = vec3(0.37, 0.36, 0.335) * (0.85 + 0.3 * n3);
-  vec3 meadow = mix(vec3(0.07, 0.10, 0.034), vec3(0.125, 0.122, 0.052), n2) * (0.8 + 0.4 * n3);
-  vec3 forest = mix(vec3(0.016, 0.03, 0.017), vec3(0.03, 0.046, 0.021), n2) * (0.72 + 0.56 * can);
-  vec3 snowC = vec3(0.84, 0.87, 0.93);
-
-  float treeline = 1080.0 + 380.0 * (n1 - 0.5) + 120.0 * (n2 - 0.5);
-  float rockK = smoothstep(0.24, 0.42, slope + 0.14 * (n2 - 0.5) + 0.05 * (n3 - 0.5));
-  float alpine = smoothstep(treeline - 60.0, treeline + 520.0, h);
-  vec3 col = mix(meadow, scree, alpine);
-  col = mix(col, rock, max(rockK, alpine * 0.5));
-  float forestK = smoothstep(treeline + 70.0, treeline - 160.0, h) * smoothstep(0.66, 0.44, slope) * smoothstep(0.16, 0.34, n2 * 0.55 + n3 * 0.45 + 0.12);
-  // keep the flat valley floor around the village as open meadow
-  forestK *= smoothstep(8.0, 34.0, h + 30.0 * (n3 - 0.5));
-  col = mix(col, forest, forestK);
-  // snow lies in the gullies and on ledges; the walls themselves stay bare
-  float snowline = 1700.0 + 380.0 * (n1 - 0.5);
-  float sAlt = smoothstep(snowline - 320.0, snowline + 560.0, h + 380.0 * flow + 180.0 * (n3 - 0.5));
-  float hold = smoothstep(0.36, 0.10, slope - 0.24 * flow + 0.4 * (can - 0.5) + 0.22 * (n2 - 0.5) + 0.12 * (1.0 - streak) * sideK);
-  float snow = clamp(sAlt * hold * 1.35, 0.0, 1.0) * (1.0 - forestK);
-  col = mix(col, snowC, snow);
-
-  float bump = mix(1.15 * (1.0 - forestK), 0.2, snow);
-  vec3 Nw = normalize(N0 + vec3(c1 - 0.5, 0.0, n3 - 0.5) * 0.45 * bump);
-  // canopy roughness on forested slopes
-  Nw = normalize(Nw + forestK * vec3(c1 - 0.5, 0.0, n3 - 0.5) * 0.45);
-  normal = normalize((viewMatrix * vec4(Nw, 0.0)).xyz);
-  diffuseColor.rgb = col;
-  roughnessFactor = mix(0.95, 0.6, snow);
+  // Overlapping wooded folds, with warm exposed soil on occasional slopes.
+  float crown = texture2D(uNoiseTex, wxz / 19.0).a;
+  float canopy = smoothstep(0.23,0.72,0.45*n2+0.36*n3+0.19*crown);
+  vec3 woodland = mix(vec3(0.027,0.069,0.043),vec3(0.089,0.160,0.064),canopy);
+  vec3 scrub = mix(vec3(0.095,0.125,0.050),vec3(0.143,0.173,0.069),n3);
+  float clearing = smoothstep(0.54,0.72,0.52*n1+0.48*n2);
+  vec3 col = mix(woodland,scrub,clearing);
+  float cut = smoothstep(0.10,0.23,slope)*smoothstep(0.64,0.81,n2*0.6+n3*0.4);
+  col = mix(col,vec3(0.19,0.112,0.065),cut*0.72);
+  normal = normalize((viewMatrix * vec4(normalize(N0+vec3(crown-.5,0.0,n3-.5)*.12),0.0)).xyz);
+  diffuseColor.rgb = col * (0.90+0.15*flow);
+  roughnessFactor = 0.96;
   metalnessFactor = 0.0;
-  vmSpec = mix(mix(0.5, 0.12, forestK), 1.0, snow);
-  vmTerrainAO = mix(1.0, 0.62, forestK) * mix(0.8, 1.0, smoothstep(0.0, 0.5, flow + 0.35)) * mix(1.0, 0.8 + 0.2 * streak, sideK * (1.0 - snow));
+  vmSpec = 0.16;
+  vmTerrainAO = 0.87+0.13*canopy;
 }`;
 	SPEC_CHUNK = ShaderChunk.lights_physical_fragment.replace("material.specularColor = vec3( 0.04 );", "material.specularColor = vec3( 0.04 * vmSpec );").replaceAll("material.specularF90 = 1.0;", "material.specularF90 = vmSpec;");
 	CACHE_RES = {
@@ -53705,7 +53667,7 @@ function createLayout() {
 	const noise = new Noise(WORLD.seed);
 	const noiseB = new Noise(WORLD.seed + 77);
 	const rng = new RNG(WORLD.seed + 5);
-	const river = new Path([
+	let river = new Path([
 		[-2300, -4300],
 		[-1500, -2900],
 		[-900, -1800],
@@ -53732,7 +53694,7 @@ function createLayout() {
 		[3200, 1600]
 	], 22);
 	const bridgeQ = river.query(-81, -12);
-	const sBridge = bridgeQ.s;
+	let sBridge = bridgeQ.s;
 	const bridge = {
 		x: bridgeQ.px,
 		z: bridgeQ.pz,
@@ -53819,9 +53781,14 @@ function createLayout() {
 	};
 	church.towerX = church.x - Math.cos(church.rot) * (church.w / 2 + 1.4) + Math.sin(church.rot) * -(church.d / 2 - 2.2);
 	church.towerZ = church.z - Math.sin(church.rot) * (church.w / 2 + 1.4) - Math.cos(church.rot) * -(church.d / 2 - 2.2);
-	const waterLevel = (s) => -.0052 * (s - sBridge);
+	const originalBridgeStation = sBridge;
+	let channelStation = s => s;
+	const waterLevel = s => -.0052 * (channelStation(s)-originalBridgeStation);
 	const planeLevel = (x, z) => -.0052 * ((x - bridge.x) * .735 + (z - bridge.z) * .678);
-	const riverHalfWidth = (s) => 10.5 + 3.2 * noise.n2(s * .011, 3.7) + 1.6 * noise.n2(s * .045, 9.1);
+	const riverHalfWidth = s => {
+		const station=channelStation(s);
+		return 10.5+3.2*noise.n2(station*.011,3.7)+1.6*noise.n2(station*.045,9.1);
+	};
 	const buildings = [];
 	const mkHouse = (x, z, rot, w, d, floors, damage, extra = {}) => ({
 		kind: "house",
@@ -54090,7 +54057,10 @@ function createLayout() {
 		}
 	}
 	buildings.forEach((b, i) => {
-		if (!b.id) b.id = "house" + i;
+		if (!b.id) {
+			b.id = "house" + i;
+			if (!b.enterable) b.floors = 1;
+		}
 	});
 	const q0 = {}, q1 = {};
 	function baseHeight(x, z) {
@@ -54458,6 +54428,22 @@ function createLayout() {
 		}
 		return h;
 	}
+	// Bend the channel after siting the village, preserving the bridge crossing.
+	const source = river;
+	const curved = source.pts.map(([x,z])=>{
+		const upper=smoothstep(55,112,-z)*(1-smoothstep(380,474,-z));
+		const lower=smoothstep(-24,45,x)*(1-smoothstep(377,472,x));
+		return [x+upper*36*Math.sin((z+68)/34),z+lower*(37*Math.sin((x-6)/38)+6*Math.sin(x/70))];
+	});
+	river=new Path(curved,1);
+	const stations=river.cum;
+	channelStation = s=>{
+		let lo=0,hi=stations.length-1;
+		while(hi-lo>1){const mid=(lo+hi)>>>1;if(stations[mid]<=s)lo=mid;else hi=mid;}
+		const t=saturate((s-stations[lo])/(stations[hi]-stations[lo]));
+		return mix(source.cum[lo],source.cum[hi],t);
+	};
+	sBridge=river.query(bridge.x,bridge.z).s;
 	return {
 		playCenter: WORLD.playCenter,
 		playRadius: WORLD.playRadius,
@@ -56287,11 +56273,39 @@ float vmBAO = 1.0;
   float nB = nq.g;
   float nC = nq.a;
   vec3 tint = vmTint.rgb * 1.992;
+  bool tin = abs(layer - 12.0) < 0.5;
+  bool brick = abs(layer - 13.0) < 0.5;
   float clean = step(10.5, layer);
   if (clean > 0.5) layer = 0.0;
   VmLayer L = vmSample(layer, uv, dx, dy);
   float aoV = vmMat.z;
-  if (layer < 0.5) {
+  if (tin) {
+    // Longitudinal folds and overlapping seams on galvanized roofing sheets.
+    float folds = uv.x * 44.0;
+    float closeUp = 1.0 - smoothstep(0.16, 0.52, fwidth(folds));
+    float wave = sin(6.283185 * folds) * closeUp;
+    float seam = (1.0 - smoothstep(0.009, 0.045, fract(uv.y * 2.0))) * closeUp;
+    float patina = smoothstep(0.50, 0.71, nA * 0.70 + nB * 0.30);
+    L.col = mix(vec3(0.49, 0.57, 0.58), vec3(0.29, 0.19, 0.13), patina * 0.58)
+          * tint * (0.91 + 0.095 * wave - 0.18 * seam);
+    L.n = vec2(0.27 * wave, 0.0);
+    L.rough = mix(0.54, 0.86, patina);
+    L.ao = 1.0;
+  } else if (brick) {
+    vec3 fn = normalize(cross(dFdx(vmWorldPos), dFdy(vmWorldPos)));
+    vec2 tangent = vec2(fn.z, -fn.x);
+    float along = dot(vmWorldPos.xz, tangent);
+    vec2 grid = abs(fn.y) > 0.9 ? vmWorldPos.xz * vec2(4.3, 11.0)
+                                : vec2(along * 4.3, vmWorldPos.y * 11.0);
+    grid.x += mod(floor(grid.y), 2.0) * 0.5;
+    vec2 edge = 0.5 - abs(fract(grid) - 0.5);
+    float face = smoothstep(0.015,0.044,edge.x) * smoothstep(0.028,0.08,edge.y);
+    float fade = 1.0 - smoothstep(16.0,45.0,dist);
+    float kiln = fract(sin(dot(floor(grid), vec2(7.17,31.9))) * 1536.73);
+    L.col = mix(vec3(0.38,0.13,0.094), mix(vec3(0.27,0.15,0.12),
+                vec3(0.39,0.12,0.086) * (0.86+0.25*kiln), face), fade) * (0.88+0.21*nA);
+    L.rough = 0.92;
+  } else if (layer < 0.5) {
     // plastered wall: weathering follows causes. Flaked to the rubble core around war damage
     // (vertex mask) and by rising damp at the foot; streaks under sills and eaves, the clean band
     // under the overhang and moss on north faces are baked into the vertex colour by the
@@ -57748,7 +57762,7 @@ function buildRoof(B, R) {
 			],
 			tEdge: th / 4,
 			outer: {
-				layer: LY.roof_tiles,
+				layer: R.tin ? 12 : LY.roof_tiles,
 				tint: R.tint,
 				ao: 1
 			},
@@ -58566,8 +58580,152 @@ function buildStair(B, st, burnt) {
 		]);
 	}
 }
+// Shallow concrete rain hoods with painted fascia, fitted to surviving lintels.
+function addRainHoods(mb, fr, openings, field, school) {
+	for (const o of openings) {
+		if (o.arch || o.balc || o.v1 < 1.6) continue;
+		const y = o.v1 + .18, left = o.u0 - .16, right = o.u1 + .16;
+		const from = FP(fr, left, y, 0), to = FP(fr, right, y, 0);
+		if ([from, to].some(p => field(p[0], y, p[2]) > -.12)) continue;
+		const slab = (u0, u1, y0, y1, near, far) => {
+			const a = FP(fr,u0,y0,near), b = FP(fr,u1,y1,far);
+			mb.abox(Math.min(a[0],b[0]), y0, Math.min(a[2],b[2]),
+			        Math.max(a[0],b[0]), y1, Math.max(a[2],b[2]));
+		};
+		mb.set(11, [1.25,1.18,1.04]);
+		slab(left,right,y,y+.095,.015,-.44);
+		mb.set(11, school ? [.2,.68,.47] : [.66,.40,.31]);
+		slab(left,right,y+.015,y+.065,-.44,-.452);
+	}
+}
+// A lean-to veranda on the road-facing wall. Keep the doorway bay open.
+function tinVeranda(mb, fr, door, gl, field) {
+	const centre = (door.u0 + door.u1) / 2;
+	const a = Math.max(.18, centre-2.4), b = Math.min(fr.L-.18, centre+2.4);
+	const high = Math.max(2.54, door.v1+.25), low = high-.28;
+	const anchor = FP(fr,centre,high,0);
+	if (field(...anchor) > .25) return;
+	mb.set(12,[.90,1.03,.94]);
+	const corners = [FP(fr,a,high,0),FP(fr,b,high,0),FP(fr,b,low,-1.04),FP(fr,a,low,-1.04)];
+	const normal = [fr.nx*.26,1,fr.nz*.26];
+	mb.quadM(...corners,normal);
+	mb.quadM(...corners.map(p=>[p[0],p[1]-.035,p[2]]),normal.map(v=>-v));
+	mb.set(LY.wood_beam,[1.45,1.19,.73]);
+	for (const u of [a+.07,b-.07]) {
+		if (u>door.u0-.22 && u<door.u1+.22) continue;
+		const top = FP(fr,u,low,-.92), base = gl(top[0],top[2])-.08;
+		mb.beam([top[0],base,top[2]],top,.065,.072);
+		mb.beam(FP(fr,u,low-.36,-.92),FP(fr,u,low+.07,-.60),.05,.05);
+	}
+	mb.beam(FP(fr,a,low-.04,-.98),FP(fr,b,low-.04,-.98),.07,.09);
+}
+function schoolVeranda(mb,b) {
+	const z = b.d/2, end = b.w/2, front = z+1.16;
+	const cream = [1.6,1.41,.91], grey = [.80,.84,.85];
+	const box = (layer,tint,x0,y0,z0,x1,y1,z1) => {
+		mb.set(layer,tint);
+		mb.abox(x0,y0,z0,x1,y1,z1);
+	};
+	// Right-hand entrance lines up with the existing classroom door at x=2.5.
+	const entry = 2.5, split = entry-1.24;
+	const piers = [-end+.13, -end+(split+end)/3, -end+2*(split+end)/3, split, end-.13];
+	box(11,grey,-end,-.12,z,end,.085,front);
+	box(11,cream,-end,2.72,z-.06,end,2.88,front+.13);
+	box(13,cream,-end,2.88,front-.16,end,3.52,front+.13);
+	for (const x of piers) {
+		box(13,cream,x-.13,.12,front-.22,x+.13,2.9,front+.1);
+		box(11,grey,x-.14,-.12,front-.23,x+.14,.39,front+.11);
+	}
+	for (let k=0;k<3;k++) {
+		const left=piers[k]+.13,right=piers[k+1]-.13,mid=(left+right)/2;
+		box(11,cream,left,2.32,front-.1,right,2.49,front+.02);
+		box(11,cream,mid-.055,.08,front-.09,mid+.055,2.76,front+.02);
+		for (let h=.35;h<=1.0;h+=.15)
+			box(11,[1.12,1.17,1.14],left,h,front-.08,right,h+.023,front-.05);
+	}
+	box(13,cream,split-.13,3.52,front-.27,end,4.68,front+.13);
+	box(11,cream,split-.17,4.68,front-.31,end+.04,4.75,front+.17);
+	for(let i=0;i<2;i++)
+		box(11,grey,entry-.93,-.16,front+i*.18,entry+.93,.07-i*.055,front+(i+1)*.18);
+	// Concrete roof-edge band follows the taller existing classroom block.
+	const h=b.floors*b.floorH+.35;
+	box(13,cream,-end-.09,h-.13,z-.11,end+.09,h+.47,z+.09);
+	box(13,cream,-end-.09,h-.13,-z-.09,-end+.09,h+.47,z-.11);
+	box(13,cream,end-.09,h-.13,-z-.09,end+.09,h+.47,z-.11);
+	box(13,cream,-end+.09,h-.13,-z-.09,end-.09,h+.47,-z+.09);
+}
+function schoolNameboard(b) {
+	const canvas = document.createElement("canvas");
+	canvas.width = 1024; canvas.height = 176;
+	const g = canvas.getContext("2d");
+	g.fillStyle = "#ead8aa"; g.fillRect(0,0,1024,176);
+	g.strokeStyle = "#4d3b29"; g.lineWidth = 5; g.strokeRect(10,10,1004,156);
+	g.textAlign = "center"; g.fillStyle = "#302c21";
+	g.font = 'bold 68px "Noto Sans Bengali", "Nirmala UI", sans-serif';
+	g.fillText("সরকারি প্রাথমিক বিদ্যালয়",512,96,950);
+	g.font = "bold 28px sans-serif"; g.fillText("GOVERNMENT PRIMARY SCHOOL",512,145);
+	const map = new CanvasTexture(canvas); map.colorSpace = SRGBColorSpace;
+	const width = b.w/2-1.25-.25;
+	const board = new Mesh(new PlaneGeometry(width,.78), new MeshStandardMaterial({ map, roughness:.9 }));
+	const x=(1.25+b.w/2)/2, z=b.d/2+1.30, c=Math.cos(b.rot), sn=Math.sin(b.rot);
+	board.position.set(b.x+x*c-z*sn,b.baseY+4.09,b.z+x*sn+z*c);
+	board.rotation.y = -b.rot;
+	board.name = "school-nameboard";
+	const frontage = new Group();
+	frontage.add(board);
+	const local = new Group();
+	local.position.set(b.x,b.baseY,b.z); local.rotation.y=-b.rot;
+	frontage.add(local);
+	const poleX=1.0, poleZ=b.d/2+1.52;
+	const pole=new Mesh(new CylinderGeometry(.025,.033,5.64,8),new MeshStandardMaterial({color:0x939797,roughness:.68}));
+	pole.position.set(poleX,2.80,poleZ); local.add(pole);
+	const cloth=new PlaneGeometry(1.12,.67,12,3);
+	const pos=cloth.attributes.position;
+	for(let i=0;i<pos.count;i++){
+		const u=pos.getX(i)+.56;
+		pos.setXYZ(i,u,pos.getY(i)-.09*u,.105*Math.sin(8*u)*u);
+	}
+	cloth.computeVertexNormals();
+	const flagCanvas=document.createElement("canvas"); flagCanvas.width=300; flagCanvas.height=180;
+	const paint=flagCanvas.getContext("2d");
+	paint.fillStyle="#006a4e"; paint.fillRect(0,0,300,180);
+	paint.fillStyle="#f42a41"; paint.beginPath(); paint.arc(135,90,60,0,Math.PI*2); paint.fill();
+	const flagMap=new CanvasTexture(flagCanvas); flagMap.colorSpace=SRGBColorSpace;
+	const flag=new Mesh(cloth,new MeshStandardMaterial({map:flagMap,side:2,roughness:1}));
+	flag.position.set(poleX,5.24,poleZ); local.add(flag);
+	return frontage;
+}
+// Cast slab and low perimeter parapet. The same surviving strips block movement.
+function concreteRoof(B,b,h,field) {
+	const nx=8, nz=6, hw=b.w/2+.14, hd=b.d/2+.14;
+	const x=i=>hw*(2*i/nx-1), z=j=>hd*(2*j/nz-1);
+	const slab=(x0,y0,z0,x1,y1,z1,tint)=>{
+		B.mb.set(11,tint);
+		B.mb.abox(x0,y0,z0,x1,y1,z1);
+		if(B.cb) B.cb.box(x0,y0,z0,x1,y1,z1);
+	};
+	const lip=[1.25,1.22,1.13], concrete=[.90,.93,.92];
+	for(let j=0;j<nz;j++){
+		let start=-1;
+		for(let i=0;i<=nx;i++){
+			const solid=i<nx && (b.damage<.48 || field(x(i+.5),h-.24,z(j+.5))<.18);
+			if(solid && start<0) start=i;
+			if(solid || start<0) continue;
+			slab(x(start),h-.17,z(j),x(i),h+.035,z(j+1),concrete);
+			if(j===0 || j===nz-1){
+				const edge=j===0?-hd:hd-.13;
+				slab(x(start),h+.034,edge,x(i),h+.40,edge+.13,lip);
+			}
+			for(const edge of [start===0?-hw:null,i===nx?hw-.13:null])
+				if(edge!==null) slab(edge,h+.034,z(j),edge+.13,h+.40,z(j+1),lip);
+			start=-1;
+		}
+	}
+}
 function buildHouse(B, b, cfg = {}) {
 	const rng = new RNG(b.seed), d = b.damage, w = b.w, dd = b.d, t = .55, floors = b.floors, fH = b.floorH || 2.75;
+	const shed = b.id==="slopeShed" || b.id==="barn" ||
+		(/^house/.test(b.id) && floors===1 && d<.72 && b.seed%4===0);
 	const H = floors * fH + .35, pitch = cfg.pitch || .4 + rng.range(-.04, .05), tanp = Math.tan(pitch);
 	const c = Math.cos(b.rot), s = Math.sin(b.rot);
 	const W = (lx, lz) => [b.x + lx * c - lz * s, b.z + lx * s + lz * c];
@@ -58626,6 +58784,7 @@ function buildHouse(B, b, cfg = {}) {
 	};
 	const tO = PLASTER[rng.int(0, PLASTER.length - 1)].map((v) => v * rng.range(.94, 1.04));
 	if (cfg.tint) for (let k = 0; k < 3; k++) tO[k] = cfg.tint[k];
+	if (b.id === "townhall") tO.splice(0, 3, 1.50, 1.23, .73);
 	const tI = [
 		tO[0] * .9,
 		tO[1] * .9,
@@ -58642,6 +58801,7 @@ function buildHouse(B, b, cfg = {}) {
 		blasts,
 		gl
 	});
+	if (!shed) Object.assign(S,{arch:false,stoneDoor:false,quoins:false,cornice:0,string:false,sign:false,shut:false});
 	const R2 = S.rng;
 	let best = 1e9, dxs = 0, dzs = 1;
 	const q = {};
@@ -58733,7 +58893,7 @@ function buildHouse(B, b, cfg = {}) {
 		}
 		return ops;
 	};
-	const yRoof = (z) => H + (dd / 2 - Math.abs(z)) * tanp;
+	const yRoof = z => shed ? H+(dd/2-Math.abs(z))*tanp : H;
 	const frames = [
 		mkFrame(-w / 2, dd / 2, w / 2, dd / 2, 0, 1, t),
 		mkFrame(w / 2, -dd / 2, -w / 2, -dd / 2, 0, -1, t),
@@ -58755,10 +58915,12 @@ function buildHouse(B, b, cfg = {}) {
 		const fr = frames[wi], gable = wi >= 2, ops = doorsOf(mkOps(fr.L, gable, wi), fr);
 		buildWall(B, fr, {
 			...base,
+			layer: shed ? 12 : 0,
+			...(shed ? {tO:[[.87,1.00,1.04],[.56,.97,.91],[1.17,.76,.59]][b.seed%3]} : {}),
 			openings: ops,
 			uvo: rng.range(0, 40),
 			ends: gable ? [2, 2] : [6, 6],
-			top: gable ? (u) => yRoof(fr.oz + fr.uz * u) : null,
+			top: gable && shed ? (u) => yRoof(fr.oz + fr.uz * u) : null,
 			dress: globalThis.__noDress ? null : S,
 			dw: {
 				gable,
@@ -58766,6 +58928,10 @@ function buildHouse(B, b, cfg = {}) {
 				D: Math.min(2, ((gable ? w : dd) - 2 * t) * .42)
 			}
 		});
+		if (shed) {
+			const door = ops.find(o=>o.door && o.v0<.1);
+			if (door) tinVeranda(mb,fr,door,gl,field);
+		} else if (b.id!=="townhall" || wi!==0) addRainHoods(mb,fr,ops,field,b.id==="townhall");
 	}
 	if (w > 8.6 && d < .78 && !cfg.noPartition) {
 		const px = cfg.partX !== void 0 ? cfg.partX : rng.range(-.18, .18) * w, fr = mkFrame(px, -dd / 2 + t, px, dd / 2 - t, 1, 0, .28), ops = [];
@@ -58849,7 +59015,8 @@ function buildHouse(B, b, cfg = {}) {
 	}
 	mark("floors");
 	const hasRoof = !cfg.noRoof && d < .86;
-	if (hasRoof) {
+	if (hasRoof && !shed) concreteRoof(B,b,H,field);
+	if (hasRoof && shed) {
 		const rt = rng.range(.86, 1.08);
 		const sag = d > .3 && R2.chance(.55) ? {
 			si: R2.int(0, 1),
@@ -58859,6 +59026,7 @@ function buildHouse(B, b, cfg = {}) {
 			a: R2.range(.1, .17)
 		} : null;
 		buildRoof(B, {
+			tin: true,
 			w,
 			d: dd,
 			eave: H,
@@ -58874,7 +59042,7 @@ function buildHouse(B, b, cfg = {}) {
 			dress: globalThis.__noDress ? null : S,
 			sag: globalThis.__noDress ? null : sag,
 			gl,
-			chimney: rng.chance(.75) ? [rng.range(-.3, .3) * w, (rng.chance(.5) ? 1 : -1) * dd * rng.range(.12, .3)] : null,
+			chimney: null,
 			tint: [
 				rt * rng.range(.96, 1.06),
 				rt,
@@ -58934,41 +59102,9 @@ var init_house = __esmMin((() => {
 		.98
 	];
 	PLASTER = [
-		[
-			1.08,
-			1,
-			.86
-		],
-		[
-			1.1,
-			1.07,
-			1
-		],
-		[
-			1.12,
-			.98,
-			.78
-		],
-		[
-			1.1,
-			.94,
-			.84
-		],
-		[
-			.98,
-			.96,
-			.92
-		],
-		[
-			1.05,
-			1,
-			.86
-		],
-		[
-			1.14,
-			1.05,
-			.9
-		]
+		[.58, 1.28, 1.14], [1.43, .72, .52], [1.49, 1.2, .57],
+		[.72, 1.12, 1.4], [.86, 1.32, .84], [1.38, .92, .97],
+		[1.38, 1.32, 1.13]
 	];
 	SHUTTER = [
 		[
@@ -59008,443 +59144,92 @@ var init_house = __esmMin((() => {
 		1.36
 	];
 }));
-// src/world/bld/church.js
-function buildChurch(B, b) {
-	const rng = new RNG(b.seed), mb = B.mb, w = b.w, d = b.d, t = .8, eave = 8.6, pitch = .5, tanp = Math.tan(pitch);
-	const c = Math.cos(b.rot), s = Math.sin(b.rot);
-	const W = (lx, lz) => [b.x + lx * c - lz * s, b.z + lx * s + lz * c];
-	mb.xf(b.x, b.baseY, b.z, b.rot);
-	if (B.cb) B.cb.xf(b.x, b.baseY, b.z, b.rot);
-	B.baseY = b.baseY;
-	const tO = [
-		1.1,
-		1.07,
-		1
-	], tI = [
-		.98,
-		.95,
-		.9
-	];
-	const blasts = [
-		{
-			x: 3.5,
-			y: 5.6,
-			z: d / 2,
-			r: 1.25
-		},
-		{
-			x: -4.5,
-			y: 2.8,
-			z: d / 2,
-			r: .9
-		},
-		{
-			x: 8.5,
-			y: 7,
-			z: d / 2,
-			r: .7
-		},
-		{
-			x: -w / 2,
-			y: 5.2,
-			z: -3.9,
-			r: .75
-		},
-		{
-			x: -w / 2,
-			y: 2,
-			z: -4.5,
-			r: .5
-		},
-		{
-			x: 5,
-			y: 11,
-			z: 2.2,
-			r: 2.6
-		},
-		{
-			x: -6,
-			y: 4,
-			z: -d / 2,
-			r: 1.1
-		}
-	];
-	const field = makeField({
-		noise: B.noise,
-		H: 12.1,
-		seed: b.seed,
-		blasts,
-		collapse: null,
-		rag: .25,
-		amp: .45
-	});
-	const roofF = (x, y, z) => Math.max(field(x, y - .5, z) + .25, 1.6 * B.noise.fbm2(x * .2 + 3.3, z * .2, 3) - .66);
-	const yRoof = (z) => eave + (d / 2 - Math.abs(z)) * tanp;
-	const gl = (lx, lz) => {
-		const p = W(lx, lz);
-		return B.ground(p[0], p[1]) - b.baseY;
+// Village mosque: three domes above a rectangular hall and an attached minaret.
+function buildMosque(B,b) {
+	const mb=B.mb, cb=B.cb, hw=b.w/2, hd=b.d/2;
+	mb.xf(b.x,b.baseY,b.z,b.rot);
+	if(cb) cb.xf(b.x,b.baseY,b.z,b.rot);
+	const ivory=[1.6,1.63,1.41], jade=[.28,.90,.69], gold=[1.65,1.14,.48];
+	const block=(x0,y0,z0,x1,y1,z1,tint)=>{
+		mb.set(11,tint);
+		mb.abox(x0,y0,z0,x1,y1,z1);
+		if(cb) cb.box(x0,y0,z0,x1,y1,z1);
 	};
-	const quiet = {
-		lamp: false,
-		bench: false,
-		wood: false,
-		sign: false,
-		interior: false,
-		number: false,
-		shut: false,
-		string: false,
-		quoins: true,
-		plinth: 1
-	};
-	const SC = houseStyle(b, false, tO, {
-		...quiet,
-		H: eave,
-		fH: eave,
-		floors: 1,
-		blasts,
-		gl,
-		plinthH: .85,
-		cornice: 1
-	});
-	const base = {
-		layer: 11,
-		y0: -1.5,
-		eave,
-		field,
-		tO,
-		tI,
-		rng,
-		cell: .45,
-		noLintel: true,
-		aoI: .45,
-		dress: globalThis.__noDress ? null : SC,
-		dw: { gable: false }
-	};
-	const side = (L) => {
-		const ops = [];
-		for (let k = 0; k < 4; k++) {
-			const uc = L * (k + .5) / 4;
-			ops.push({
-				u0: uc - .65,
-				u1: uc + .65,
-				v0: 3.6,
-				v1: 6.9,
-				arch: 1,
-				trim: .2
-			});
-		}
-		return ops;
-	};
-	buildWall(B, mkFrame(-w / 2, d / 2, w / 2, d / 2, 0, 1, t), {
-		...base,
-		openings: side(w),
-		uvo: 3,
-		ends: [6, 6]
-	});
-	buildWall(B, mkFrame(w / 2, -d / 2, -w / 2, -d / 2, 0, -1, t), {
-		...base,
-		openings: side(w),
-		uvo: 17,
-		ends: [6, 6]
-	});
-	const frW = mkFrame(-w / 2, -d / 2 + t, -w / 2, d / 2 - t, -1, 0, t), frE = mkFrame(w / 2, d / 2 - t, w / 2, -d / 2 + t, 1, 0, t);
-	buildWall(B, frW, {
-		...base,
-		dw: { gable: true },
-		uvo: 31,
-		ends: [2, 2],
-		top: (u) => yRoof(frW.oz + frW.uz * u),
-		openings: [{
-			u0: 1.8499999999999999,
-			u1: 3.95,
-			v0: 0,
-			v1: 3.7,
-			arch: 1,
-			trim: .26
-		}, {
-			u0: 2.05,
-			u1: 3.75,
-			v0: 6.1,
-			v1: 7.8,
-			arch: 2,
-			trim: .22
-		}]
-	});
-	buildWall(B, frE, {
-		...base,
-		dw: { gable: true },
-		uvo: 44,
-		ends: [2, 2],
-		top: (u) => yRoof(frE.oz + frE.uz * u),
-		openings: [{
-			u0: frE.L / 2 - .6,
-			u1: frE.L / 2 + .6,
-			v0: 6.9,
-			v1: 8.1,
-			arch: 2,
-			trim: .2
-		}]
-	});
-	buildRoof(B, {
-		w,
-		d,
-		eave,
-		pitch,
-		field,
-		roofF,
-		rng,
-		burnt: false,
-		uvo: 5,
-		tint: [
-			.98,
-			.95,
-			.95
-		],
-		og: .4,
-		oe: .55
-	});
-	const hs = b.towerSize / 2, tx = -(w / 2 + 1.4), tz = d / 2 - 2.2, tt = .75, Ht = 27;
-	const tb = [
-		{
-			x: tx - .5,
-			y: 14,
-			z: tz + hs,
-			r: .6
-		},
-		{
-			x: tx + 1.2,
-			y: 19,
-			z: tz + hs,
-			r: .45
-		},
-		{
-			x: tx - hs,
-			y: 9.5,
-			z: tz + .6,
-			r: .6
-		},
-		{
-			x: tx - hs,
-			y: 17.5,
-			z: tz - 1,
-			r: .4
-		},
-		{
-			x: tx + 1.5,
-			y: 6.5,
-			z: tz + hs,
-			r: .5
-		},
-		{
-			x: tx - hs,
-			y: 23.6,
-			z: tz + 1.9,
-			r: .5
-		}
-	];
-	const tf = makeField({
-		noise: B.noise,
-		H: 39,
-		seed: 99,
-		blasts: tb,
-		collapse: null,
-		rag: 0,
-		amp: .35
-	});
-	const ST = houseStyle(b, false, [
-		1.2,
-		1.19,
-		1.16
-	], {
-		...quiet,
-		H: Ht,
-		fH: Ht,
-		floors: 1,
-		blasts: tb,
-		gl,
-		plinthH: 1.1,
-		cornice: 0
-	});
-	const tbase = {
-		layer: 11,
-		y0: -2.5,
-		eave: Ht,
-		field: tf,
-		tO: [
-			1.2,
-			1.19,
-			1.16
-		],
-		tI: [
-			.8,
-			.8,
-			.78
-		],
-		rng,
-		cell: .5,
-		noLintel: true,
-		aoI: .4,
-		dress: globalThis.__noDress ? null : ST
-	};
-	const belfry = (L) => {
-		const m = L / 2;
-		return [{
-			u0: m - 1.25,
-			u1: m - .3,
-			v0: 21.7,
-			v1: 24.9,
-			arch: 1,
-			trim: .16
-		}, {
-			u0: m + .3,
-			u1: m + 1.25,
-			v0: 21.7,
-			v1: 24.9,
-			arch: 1,
-			trim: .16
-		}];
-	};
-	const slits = (L) => [
-		6.2,
-		12.2,
-		17.4
-	].map((y) => ({
-		u0: L / 2 - .22,
-		u1: L / 2 + .22,
-		v0: y,
-		v1: y + 1.15
-	}));
-	[
-		mkFrame(tx - hs, tz + hs, tx + hs, tz + hs, 0, 1, tt),
-		mkFrame(tx + hs, tz - hs, tx - hs, tz - hs, 0, -1, tt),
-		mkFrame(tx + hs, tz + hs - tt, tx + hs, tz - hs + tt, 1, 0, tt),
-		mkFrame(tx - hs, tz - hs + tt, tx - hs, tz + hs - tt, -1, 0, tt)
-	].forEach((fr, i) => buildWall(B, fr, {
-		...tbase,
-		openings: [...belfry(fr.L), ...i === 0 || i === 3 ? slits(fr.L) : []],
-		uvo: 50 + i * 9,
-		ends: i < 2 ? [6, 6] : [2, 2],
-		dw: { gable: i >= 2 }
-	}));
-	mb.set(LY.stone_blocks, [
-		1.2,
-		1.18,
-		1.14
-	]);
-	const ring = (y0, y1, out) => {
-		const a = hs + out;
-		mb.abox(tx - a, y0, tz + hs - .05, tx + a, y1, tz + a, {
-			axis: "x",
-			tile: 4
-		});
-		mb.abox(tx - a, y0, tz - a, tx + a, y1, tz - hs + .05, {
-			axis: "x",
-			tile: 4
-		});
-		mb.abox(tx + hs - .05, y0, tz - hs, tx + a, y1, tz + hs, {
-			axis: "z",
-			tile: 4
-		});
-		mb.abox(tx - a, y0, tz - hs, tx - hs + .05, y1, tz + hs, {
-			axis: "z",
-			tile: 4
-		});
-	};
-	ring(8.2, 8.46, .1);
-	ring(15, 15.26, .1);
-	ring(20.9, 21.22, .15);
-	ring(25.55, 25.75, .08);
-	mb.abox(tx - hs - .24, Ht, tz - hs - .24, tx + hs + .24, 27.38, tz + hs + .24, {
-		axis: "x",
-		tile: 4
-	});
-	mb.set(LY.wood_planks, [
-		.8,
-		.76,
-		.7
-	]);
-	mb.abox(tx - hs + tt, 21.35, tz - hs + tt, tx + hs - tt, 21.5, tz + hs - tt, { ao: .5 });
-	mb.set(LY.wood_beam, [
-		.9,
-		.85,
-		.8
-	]);
-	mb.beam([
-		tx - hs + tt,
-		24.25,
-		tz
-	], [
-		tx + hs - tt,
-		24.25,
-		tz
-	], .22, .26, { ao: .6 });
-	const prof = [
-		[.05, 24.1],
-		[.2, 24.05],
-		[.3, 23.8],
-		[.36, 23.35],
-		[.47, 23],
-		[.62, 22.8]
-	];
-	mb.set(LY.slate_dark, [
-		1.5,
-		1.25,
-		.8
-	]);
-	for (let k = 0; k < prof.length - 1; k++) for (let q = 0; q < 8; q++) {
-		const a0 = q / 8 * 6.2832, a1 = (q + 1) / 8 * 6.2832, am = (a0 + a1) / 2;
-		const p = (r, a) => [
-			tx + r[0] * Math.cos(a),
-			r[1],
-			tz + r[0] * Math.sin(a)
-		];
-		mb.quad(p(prof[k], a0), p(prof[k], a1), p(prof[k + 1], a1), p(prof[k + 1], a0), [
-			Math.cos(am),
-			.3,
-			Math.sin(am)
-		], [q * .1, k * .1], [q * .1 + .1, k * .1], [q * .1 + .1, k * .1 + .1], [q * .1, k * .1 + .1], .6, 0, 0, true);
-	}
-	const y0s = 27.38, R0 = 3.3, y1s = 28.48, R1 = 2.5, yA = 36.68, RA = .07, s8 = Math.sin(Math.PI / 8), c8 = Math.cos(Math.PI / 8);
-	mb.set(LY.slate_dark, [
-		1,
-		1,
-		1.03
-	]);
-	const sp = (r, y, a) => [
-		tx + r * Math.cos(a),
-		y,
-		tz + r * Math.sin(a)
-	];
-	for (let k = 0; k < 8; k++) {
-		const a0 = (k - .5) * Math.PI / 4, a1 = (k + .5) * Math.PI / 4, am = k * Math.PI / 4, n = [
-			Math.cos(am),
-			.4,
-			Math.sin(am)
-		], uo = k * 1.37;
-		const seg = (ra, ya, rb, yb, vo) => {
-			const wa = 2 * ra * s8, wb = 2 * rb * s8, sl = Math.hypot((ra - rb) * c8, yb - ya);
-			mb.quad(sp(ra, ya, a0), sp(ra, ya, a1), sp(rb, yb, a1), sp(rb, yb, a0), n, [uo - wa / 4, vo], [uo + wa / 4, vo], [uo + wb / 4, vo - sl / 2], [uo - wb / 4, vo - sl / 2], 1, 0, 0, true);
-			return vo - sl / 2;
+	const height=5.55;
+	// Pointed arcade. Front and rear faces share the same arch cutout as the collider.
+	function arcade(fr,bays,open){
+		const bay=fr.L/bays, th=.48;
+		const face=(u,y,d)=>FP(fr,u,y,d);
+		const span=(u0,u1,base0,base1,top,tint)=>{
+			const side=d=>[face(u0,base0,d),face(u1,base1,d),face(u1,top,d),face(u0,top,d)];
+			const f=side(0),r=side(th);
+			mb.set(11,tint);
+			mb.quadM(...f,[fr.nx,0,fr.nz]);
+			mb.quadM(...r,[-fr.nx,0,-fr.nz]);
+			mb.quadM(f[0],f[1],r[1],r[0],[0,-1,0]);
+			mb.quadM(f[0],r[0],r[3],f[3],[-fr.ux,0,-fr.uz]);
+			mb.quadM(f[1],f[2],r[2],r[1],[fr.ux,0,fr.uz]);
+			if(cb) cb.hex(f,r);
 		};
-		seg(R1, y1s, RA, yA, seg(R0, y0s, R1, y1s, 0));
-		mb.quad(sp(R0, y0s, a0), sp(R0, y0s, a1), sp(2.4, 27.4, a1), sp(2.4, 27.4, a0), [
-			0,
-			-1,
-			0
-		], [0, 0], [.5, 0], [.5, .4], [0, .4], .5);
+		for(let k=0;k<bays;k++){
+			const left=k*bay,right=left+bay,mid=(left+right)/2,rad=Math.min(1.46,bay*.37);
+			span(left,mid-rad,-1,-1,height,ivory);
+			span(mid+rad,right,-1,-1,height,ivory);
+			if(!open) span(mid-rad,mid+rad,-1,-1,1.20,ivory);
+			const arch=t=>2.48+1.76*Math.sqrt(Math.max(0,1-((Math.abs(t)+.34)/1.34)**2));
+			for(let j=0;j<16;j++){
+				const a=j/8-1,c=(j+1)/8-1,u=mid+rad*a,v=mid+rad*c;
+				span(u,v,arch(a),arch(c),height,ivory);
+				mb.set(11,jade);
+				mb.quadM(face(u,arch(a),-.014),face(v,arch(c),-.014),
+					face(v,arch(c)+.14,-.014),face(u,arch(a)+.14,-.014),[fr.nx,0,fr.nz]);
+			}
+		}
 	}
-	mb.set(LY.slate_dark, [
-		.55,
-		.55,
-		.55
-	]);
-	mb.abox(tx - .06, 36.53, tz - .06, tx + .06, 38.58, tz + .06, { axis: "y" });
-	mb.abox(tx - .55, 37.88, tz - .05, tx + .55, 38, tz + .05, { axis: "x" });
-	mb.abox(tx - .16, 36.58, tz - .16, tx + .16, 36.9, tz + .16);
-	houseRubble(B, b, {
-		collapse: null,
-		debris: .8
-	}, field, W, rng, eave, true);
+	arcade(mkFrame(-hw,hd,hw,hd,0,1,.48),5,true);
+	arcade(mkFrame(hw,-hd,-hw,-hd,0,-1,.48),5,false);
+	arcade(mkFrame(-hw,-hd+.48,-hw,hd-.48,-1,0,.48),3,true);
+	arcade(mkFrame(hw,hd-.48,hw,-hd+.48,1,0,.48),3,false);
+	block(-hw-.14,height-.12,-hd-.14,hw+.14,height+.13,hd+.14,ivory);
+	for(const z of [-hd,hd-.18]) block(-hw,height+.12,z,hw,height+.50,z+.18,jade);
+	for(const x of [-hw,hw-.18]) block(x,height+.12,-hd+.18,x+.18,height+.50,hd-.18,jade);
+	// Turn a radius/height profile around a vertical axis, including its collision shell.
+	function turn(x,z,profile,tint,n=32){
+		mb.set(11,tint);
+		for(let j=1;j<profile.length;j++){
+			const [ra,ya]=profile[j-1],[rb,yb]=profile[j];
+			for(let k=0;k<n;k++){
+				const a=k*2*Math.PI/n,c=(k+1)*2*Math.PI/n,mid=(a+c)/2;
+				const point=(r,y,t)=>[x+r*Math.cos(t),y,z+r*Math.sin(t)];
+				const q=[point(ra,ya,c),point(ra,ya,a),point(rb,yb,a),point(rb,yb,c)];
+				const norm=new Vector3((yb-ya)*Math.cos(mid),ra-rb,(yb-ya)*Math.sin(mid)).normalize();
+				mb.quadM(...q,[norm.x,norm.y,norm.z]);
+				if(cb) cb.quad(...q);
+			}
+		}
+	}
+	function dome(x,z,y,r){
+		turn(x,z,[[r*.85,y],[r*.85,y+.46],[r*.91,y+.48],[r*.91,y+.57]],ivory);
+		const shape=[[.89,0],[.98,.13],[1,.28],[.97,.51],[.86,.72],[.68,.91],[.43,1.08],[.20,1.20],[.045,1.32]];
+		turn(x,z,shape.map(([a,h])=>[a*r,y+.55+h*r]),jade);
+		const tip=y+.55+1.32*r;
+		turn(x,z,[[r*.055,tip-.05],[r*.075,tip+.08],[.027,tip+.42],[.012,tip+.50]],gold,12);
+	}
+	for(const x of [-7.5,0,7.5]) dome(x,0,height+.13,x===0?3.45:2.65);
+	const tx=-hw-1.4,tz=hd-2.2;
+	turn(tx,tz,[[1.93,-1],[1.93,.64],[1.68,.83],[1.33,9.5],[1.83,9.87],[1.83,10.12],[1.13,10.13],[.92,15.86],[1.37,16.18],[1.37,16.37],[.85,16.38],[.85,18.42]],ivory,24);
+	for(const [y,r] of [[3.4,1.60],[9.97,1.85],[16.25,1.38],[18.38,.94]])
+		turn(tx,tz,[[r,y],[r,y+.12]],jade,24);
+	dome(tx,tz,18.42,1.09);
+	// A gilded crescent above the central dome, open toward the right.
+	const cy=height+.13+.55+1.32*3.45+.50+.28;
+	mb.set(11,gold);
+	for(let i=0;i<28;i++){
+		const a=.71+(2*Math.PI-1.42)*i/28,c=.71+(2*Math.PI-1.42)*(i+1)/28;
+		const rim=(t,inner)=>[.39*Math.cos(t)+(inner?.12:0),cy+(inner?.315:.39)*Math.sin(t),0];
+		const face=[rim(a,false),rim(c,false),rim(c,true),rim(a,true)];
+		mb.quadM(...face,[0,0,1]); mb.quadM(...face,[0,0,-1]);
+	}
 }
 var init_church = __esmMin((() => {
 	init_noise();
@@ -60307,6 +60092,30 @@ function fountain(mb, cb, gl, rng) {
 		.95
 	]);
 	obb$4(mb, null, .6, .17, -.4, .25, .06, .18, .7, { tile: 2 });
+	// The square retains its original stone enclosure and central pedestal.
+	mb.set(11, [1.65, 1.61, 1.51]);
+	mb.abox(-1.27,.13,-.58,1.27,.30,.58);
+	mb.abox(-1.17,.30,-.48,1.17,.44,.48);
+	for (const side of [-1,1]) {
+		for (const [x,h] of [[.65,2.21],[1.05,1.73]]) {
+			const cx = side*x;
+			for (const edge of [-.12,.12])
+				mb.abox(cx+edge-.036,.44,-.04,cx+edge+.036,h,.085);
+			mb.abox(cx-.156,h-.075,-.04,cx+.156,h,.085);
+		}
+	}
+	for (const x of [-.33,0,.33]) {
+		mb.abox(x-.049,1.26,-.065,x+.049,2.94,.065);
+		mb.beam([x,2.91,0],[x,3.29,.24],.098,.12);
+	}
+	mb.abox(-.379,3.23,.18,.379,3.34,.30);
+	mb.set(11, [1.75,.095,.07]);
+	for (let i=0; i<40; i++) {
+		const a = i*Math.PI/20, b = (i+1)*Math.PI/20;
+		const point = angle => [.55*Math.cos(angle),2.48+.55*Math.sin(angle),-.16];
+		for (const sign of [-1,1])
+			mb.tri([0,2.48,-.16],point(sign*a),point(sign*b),[0,0,sign],[.5,.5],[0,0],[1,0],1);
+	}
 }
 function stall(mb, cb, gl, rng) {
 	const post = (x, z, h) => {
@@ -60958,7 +60767,7 @@ function specialCfg(b) {
 					z: 0,
 					r: 2
 				}],
-				extra: (B) => clock(B.mb, -w / 2 - .03, H + .78, 0, .55)
+				extra: (B) => schoolVeranda(B.mb,b)
 			}, stair(w / 2 - t - .5, -dd / 2 + t + .3, -dd / 2 + t + .3 + 5.4, fH, -1));
 		}
 		case "barn": {
@@ -61566,7 +61375,7 @@ async function build$2(ctx) {
 		B.cb = new CB();
 		const i0 = B.mb.idx.length, key = b.kind === "church" ? "church" : b.x < -60 ? "west" : b.x < 30 ? "v0" : b.x < 80 ? "v1" : "v2";
 		try {
-			if (b.kind === "church") buildChurch(B, b);
+			if (b.kind === "church") buildMosque(B, b);
 			else buildHouse(B, b, heroCfg(b, B));
 			const dropped = B.mb.prune(i0, B.ground);
 			if (dropped.length) {
@@ -61619,6 +61428,8 @@ async function build$2(ctx) {
 	if (ctx.tick) await ctx.tick(.93);
 	const group = new Group();
 	group.name = "buildings";
+	const school = ctx.layout.buildings.find(b => b.id === "townhall");
+	if (school) group.add(schoolNameboard(school));
 	let tris = 0, verts = 0;
 	const parts = [];
 	for (const [key, mb] of chunks) {
@@ -66547,7 +66358,7 @@ function buildBroadleaf(seed, o) {
 	const rnd = rng32(seed), H = o.H, r0 = o.trunk;
 	const segs = [], clusters = [];
 	const sw = (p) => Math.pow(Math.max(0, p[1]) / H, 2) * .35 + Math.hypot(p[0], p[2]) * .03;
-	const MAXD = 4;
+	const MAXD = o.branchDepth ?? 4;
 	const limb = (p, d, len, rad, depth, dead) => {
 		const [u, v] = perpFrame(d);
 		const ba = rnd() * TAU$4, bk = .1 + rnd() * .22;
@@ -67375,6 +67186,7 @@ async function build(ctx) {
 		console.error("[vegetation] grass map failed:", e);
 	}
 	if (ctx.tick) await ctx.tick(.2);
+	
 	safe("grass", () => {
 		const atlas = makeGrassAtlas(aniso);
 		const gAvg = groundAverage(T);
@@ -67714,38 +67526,20 @@ async function build(ctx) {
 		if (!plant) return;
 		const kinds = [
 			{
-				name: "spruceA",
-				rn: 52,
-				cap: 440,
-				clear: new Color(.012, .02, .012),
-				geo: buildConifer(101, {
-					H: 17,
-					R: 3.5,
-					whorls: 15,
-					per: 8,
-					y0: .13,
-					droop: .42,
-					gap: .07,
-					trunk: .27
+				name: "mango", rn: 59, cap: 440, clear: new Color(.028,.049,.021),
+				...broadleafKind(107,{
+					branchDepth:3,H:12.4,trunk:.41,bole:.32,limbs:4,limbTilt:.98,limbLen:.27,
+					leader:false,low:2,spread:1.22,fork:.32,lateral:.74,photo:.42,
+					droop:.47,leafS:1.58,sprays:[PT.spray0,PT.spray2],bark:PT.barkD
 				})
-			},
-			{
-				name: "spruceB",
-				rn: 52,
-				cap: 320,
-				clear: new Color(.012, .02, .012),
-				geo: buildConifer(202, {
-					H: 13.5,
-					R: 2.5,
-					whorls: 12,
-					per: 7,
-					y0: .26,
-					droop: .3,
-					gap: .2,
-					trunk: .21
+			},{
+				name: "kadam", rn: 59, cap:320, clear:new Color(.032,.057,.026),
+				...broadleafKind(209,{
+					branchDepth:3,H:13.1,trunk:.30,bole:.43,limbs:3,limbTilt:.77,limbLen:.26,
+					leader:true,low:1,spread:1.04,fork:.34,lateral:.72,photo:.52,
+					droop:.24,leafS:1.55,sprays:[PT.spray3,PT.spray0],bark:PT.barkD
 				})
-			},
-			{
+			},{
 				name: "maple",
 				rn: 125,
 				cap: 90,
@@ -67922,6 +67716,14 @@ async function build(ctx) {
 			addDec(x, z, .72 + sc * .5, kd < .42 ? 0 : kd < .74 ? 1 : 2, rot);
 			nDec++;
 		}
+		// Mature mango trees at open sites beside the village and meadow.
+		for(const [x,z,scale] of [[-87,84,1.45],[105,-121,1.40],[143,-44,1.54],[202,-74,1.40],[54,19,1.38]]) {
+			T.maskAt(x,z,mk);
+			P.river.query(x,z,q);
+			if(mk.bed>.02 || mk.road>.02 || mk.cobble>.03 || bldDist(x,z)<7 ||
+				q.d<P.riverHalfWidth(q.s)+8 || inCrater(x,z,2) || !farFrom(x,z,5)) continue;
+			trees.push({x,y:ground(x,z)-.14,z,s:scale,sy:.98,kind:0,rot:x*.07,tint:1.05});
+		}
 		handle.trees = trees.length;
 		const m4 = new Matrix4(), qt = new Quaternion(), eu = new Euler(), v3 = new Vector3(), sc3 = new Vector3();
 		const CELL = 40, grid = /* @__PURE__ */ new Map();
@@ -67939,7 +67741,7 @@ async function build(ctx) {
 			if (!grid.has(key)) grid.set(key, []);
 			grid.get(key).push(i);
 		});
-		const matC = makePlantMaterial(plant.tex, U, kinds[0].rn), matD = makePlantMaterial(plant.tex, U, kinds[2].rn, true);
+		const matC = makePlantMaterial(plant.tex, U, kinds[0].rn,true), matD = makePlantMaterial(plant.tex, U, kinds[2].rn, true);
 		const mkMesh = (geo, pm, cap, name) => {
 			const mesh = new InstancedMesh(geo, pm.mat, cap);
 			mesh.instanceMatrix.setUsage(DynamicDrawUsage);
