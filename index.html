@@ -79879,6 +79879,32 @@ var Game = class {
 	}
 	_startPoint() {
 		const ch = this.layout.church, f = this.zombies.flow;
+		const school = (this.layout.buildings || []).find((b) => b.id === "townhall");
+		if (school) {
+			const c = Math.cos(school.rot), sn = Math.sin(school.rot);
+			const toW = (lx, lz) => [school.x + lx * c - lz * sn, school.z + lx * sn + lz * c];
+			const smX = 2.3, smZ = school.d / 2 + 3.6;
+			const [tx, tz] = toW(smX, smZ);
+			for (const [lx, dz] of [
+				[2.3, 8.2],
+				[2.8, 8.2],
+				[2.3, 9.0],
+				[3.2, 7.6],
+				[2.3, 7.4],
+				[3.6, 8.6],
+				[1.8, 8.8]
+			]) {
+				const [wx, wz] = toW(lx, school.d / 2 + dz);
+				const y = this.terrain.heightAt(wx, wz);
+				if ((!f || f.walkable(wx, wz)) && this.collision.resolveCapsule(_v$1.set(wx, y + .05, wz), .6, 1.8).lengthSq() < 1e-8) {
+					return [
+						wx,
+						wz,
+						Math.atan2(-(tx - wx), -(tz - wz))
+					];
+				}
+			}
+		}
 		let s = START[0];
 		for (const c of START) {
 			const y = this.terrain.heightAt(c[0], c[1]);
