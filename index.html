@@ -85083,6 +85083,22 @@ var LZ = [{
 	search: 9,
 	step: 1,
 	best: true
+}, {
+	id: "mosque",
+	name: "the ground beside the mosque",
+	x: 55,
+	z: -121,
+	look: [70, -103],
+	search: 6,
+	step: 2,
+	best: false,
+	in: {
+		D: 280,
+		H: 40,
+		C: 45,
+		T: 8,
+		slack: 1
+	}
 }];
 var N = 128;
 var _a = new Vector3();
@@ -85334,7 +85350,7 @@ var Helicopter = class {
 		if (settle < 1) g.quaternion.slerp(lz.quat, 1 - settle);
 	}
 	_fly(key, sign) {
-		const lz = this.lz, P = this.P = PATH[key];
+		const lz = this.lz, P = this.P = (key === "in" && lz.in) || PATH[key];
 		const pr = lz.prof[key] || (lz.prof[key] = this._profile(lz, sign, P));
 		this.sign = sign;
 		this.ys = pr.ys;
@@ -85715,6 +85731,7 @@ var Operation = class {
 			},
 			exitYaw: yaw - Math.PI / 2 + .1,
 			quat: new Quaternion().setFromUnitVectors(UP, T.normalAt(x, z, _n)).multiply(new Quaternion().setFromAxisAngle(UP, yaw)),
+			in: def.in,
 			prof: {}
 		};
 	}
@@ -85746,9 +85763,9 @@ var Operation = class {
 		return this.lzs;
 	}
 	_pickLz() {
-		const all = this._lzs(), want = this.nextLz ? all.find((l) => l.id === this.nextLz) : null;
+		const all = this._lzs(), id = this.nextLz || "mosque", want = all.find((l) => l.id === id);
 		this.nextLz = null;
-		return want || all[Math.floor(Math.random() * all.length)];
+		return want || all[0];
 	}
 	compose(n) {
 		const c = this.game._compose(n);
